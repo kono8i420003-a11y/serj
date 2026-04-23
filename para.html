@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkyFree — Парашютный клуб</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky:    #5bb8f5;
+    --sky2:   #3a9fd8;
+    --sky3:   #1a7fb5;
+    --pale:   #e8f6fd;
+    --pale2:  #d0ecfa;
+    --white:  #ffffff;
+    --dark:   #1c3a52;
+    --gray:   #5a7a8e;
+    --light:  #f4fbff;
+    --err:    #e05252;
+    --ok:     #3cbf7a;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(30,80,120,.13);
+  }
+
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--light);
+    color: var(--dark);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ─────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px;
+    background: rgba(255,255,255,.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(91,184,245,.18);
+    transition: box-shadow .3s;
+  }
+  nav.scrolled { box-shadow: 0 4px 24px rgba(30,80,120,.10); }
+  .nav-logo { font-size: 1.4rem; font-weight: 800; color: var(--sky3);
+    letter-spacing: -.5px; text-decoration: none; }
+  .nav-logo span { color: var(--sky); }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--dark); font-size: .93rem;
+    font-weight: 500; transition: color .2s; }
+  .nav-links a:hover { color: var(--sky2); }
+  .nav-burger { display: none; flex-direction: column; gap: 5px;
+    cursor: pointer; background: none; border: none; padding: 4px; }
+  .nav-burger span { display: block; width: 24px; height: 2px;
+    background: var(--dark); border-radius: 2px; transition: .3s; }
+  .nav-burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-burger.open span:nth-child(2) { opacity: 0; }
+  .nav-burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── HERO ────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 20px 60px;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(91,184,245,.35) 0%, transparent 70%),
+      linear-gradient(160deg, #e8f6fd 0%, #f4fbff 60%, #d0ecfa 100%);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(91,184,245,.18) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(58,159,216,.13) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* floating clouds */
+  .cloud {
+    position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,.65);
+    filter: blur(2px);
+    animation: float linear infinite;
+    pointer-events: none;
+  }
+  .cloud:nth-child(1) { width:180px;height:60px; top:15%; left:-10%;animation-duration:22s;animation-delay:0s; }
+  .cloud:nth-child(2) { width:120px;height:40px; top:28%; left:-5%; animation-duration:30s;animation-delay:-8s; }
+  .cloud:nth-child(3) { width:220px;height:70px; top:55%; left:-8%;animation-duration:38s;animation-delay:-14s; }
+  @keyframes float { from{transform:translateX(-120%)} to{transform:translateX(110vw)} }
+
+  /* flying airplane */
+  .airplane {
+    position: absolute;
+    width: 320px;
+    height: 160px;
+    top: 20%;
+    right: -10%;
+    animation: fly 15s ease-in-out infinite;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .airplane img {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.1));
+  }
+  @keyframes fly {
+    0% { transform: translateX(100px) translateY(0) rotate(-10deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateX(calc(-100vw - 100px)) translateY(30px) rotate(5deg); opacity: 0; }
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(91,184,245,.18); border: 1px solid rgba(91,184,245,.45);
+    color: var(--sky3); font-size: .82rem; font-weight: 600;
+    padding: 5px 14px; border-radius: 50px; margin-bottom: 24px;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .hero-badge::before { content:'✈'; font-size:.9rem; }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 7vw, 5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    color: var(--dark);
+    max-width: 820px;
+    margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: normal; color: var(--sky2); }
+
+  .hero p {
+    font-size: clamp(.97rem, 2.2vw, 1.22rem);
+    color: var(--gray);
+    max-width: 560px;
+    margin-bottom: 40px;
+  }
+
+  .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 16px 40px;
+    background: linear-gradient(135deg, var(--sky) 0%, var(--sky3) 100%);
+    color: #fff; font-weight: 700; font-size: 1.05rem;
+    border-radius: 50px; border: none; cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 8px 28px rgba(58,159,216,.4);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(58,159,216,.5); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    display: inline-block;
+    padding: 15px 38px;
+    border: 2px solid var(--sky2);
+    color: var(--sky3); font-weight: 700; font-size: 1.05rem;
+    border-radius: 50px; cursor: pointer; text-decoration: none;
+    background: transparent;
+    transition: background .2s, color .2s, transform .2s;
+  }
+  .btn-outline:hover { background: var(--sky2); color: #fff; transform: translateY(-3px); }
+
+  .hero-scroll {
+    margin-top: 60px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--gray); font-size: .82rem; letter-spacing: .05em;
+    text-transform: uppercase;
+    animation: bounce 2s ease-in-out infinite;
+  }
+  .hero-scroll svg { width: 22px; opacity: .5; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+
+  /* ── SECTION BASE ────────────────────────── */
+  section { padding: 100px 20px; scroll-margin-top: 90px; }
+  .container { max-width: 1140px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block; font-size: .78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .1em;
+    color: var(--sky2); margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 800; letter-spacing: -.5px;
+    color: var(--dark); margin-bottom: 14px;
+  }
+  .section-sub {
+    font-size: 1.05rem; color: var(--gray); max-width: 540px;
+  }
+  .section-head { margin-bottom: 60px; }
+
+  /* ── ADVANTAGES ──────────────────────────── */
+  #advantages { background: var(--white); }
+  .adv-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 28px;
+  }
+  .adv-card {
+    background: var(--light);
+    border: 1px solid var(--pale2);
+    border-radius: var(--radius);
+    padding: 36px 30px;
+    transition: transform .3s, box-shadow .3s;
+  }
+  .adv-card:hover { transform: translateY(-6px); box-shadow: var(--shadow); }
+  .adv-icon {
+    width: 58px; height: 58px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--pale) 0%, var(--pale2) 100%);
+    border-radius: 16px; font-size: 1.7rem; margin-bottom: 22px;
+  }
+  .adv-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
+  .adv-card p { font-size: .93rem; color: var(--gray); line-height: 1.65; }
+
+  /* ── GALLERY ─────────────────────────────── */
+  #gallery { background: var(--pale); }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  .gallery-card {
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    position: relative;
+    cursor: pointer;
+    background: var(--pale2);
+  }
+  .gallery-card .g-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform .4s;
+  }
+  .gallery-card:hover .g-img { transform: scale(1.06); }
+  .gallery-card .g-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(26,127,181,.75) 0%, transparent 55%);
+    opacity: 0; transition: opacity .3s;
+    display: flex; align-items: flex-end; padding: 18px;
+  }
+  .gallery-card:hover .g-overlay { opacity: 1; }
+  .g-overlay span { color: #fff; font-weight: 600; font-size: .95rem; }
+
+  /* ── REVIEWS ─────────────────────────────── */
+  #reviews { background: var(--white); }
+  .reviews-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+  .review-card {
+    background: var(--light);
+    border: 1px solid var(--pale2);
+    border-radius: var(--radius);
+    padding: 30px;
+    position: relative;
+    transition: box-shadow .3s;
+  }
+  .review-card:hover { box-shadow: var(--shadow); }
+  .review-card::before {
+    content: '\201C';
+    position: absolute; top: 14px; right: 22px;
+    font-size: 4.5rem; color: var(--pale2);
+    font-family: Georgia, serif; line-height: 1;
+  }
+  .stars { display: flex; gap: 3px; margin-bottom: 14px; }
+  .stars span { color: #f5b942; font-size: 1.1rem; }
+  .review-text { font-size: .95rem; color: var(--gray); line-height: 1.7; margin-bottom: 20px; }
+  .reviewer { display: flex; align-items: center; gap: 12px; }
+  .reviewer-avatar {
+    width: 54px; height: 54px; border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--pale2);
+  }
+  .reviewer-avatar img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .reviewer-info strong { display: block; font-size: .93rem; color: var(--dark); }
+  .reviewer-info span { font-size: .82rem; color: var(--gray); }
+
+  /* ── FAQ ─────────────────────────────────── */
+  #faq { background: var(--pale); }
+  .faq-list { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+  .faq-item {
+    background: var(--white);
+    border: 1px solid var(--pale2);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .faq-question {
+    width: 100%; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+    padding: 20px 24px;
+    background: none; border: none; cursor: pointer;
+    text-align: left; font-size: 1rem;
+    font-weight: 600; color: var(--dark);
+    transition: background .2s;
+  }
+  .faq-question:hover { background: var(--pale); }
+  .faq-icon {
+    flex-shrink: 0; width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--pale2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sky3); font-size: 1.1rem; font-weight: 700;
+    transition: transform .3s, background .3s;
+  }
+  .faq-item.open .faq-icon {
+    transform: rotate(45deg);
+    background: var(--sky2); color: #fff;
+  }
+  .faq-answer {
+    max-height: 0; overflow: hidden;
+    transition: max-height .4s ease, padding .3s;
+    padding: 0 24px;
+    font-size: .95rem; color: var(--gray); line-height: 1.7;
+  }
+  .faq-item.open .faq-answer {
+    max-height: 300px;
+    padding: 0 24px 20px;
+  }
+
+  /* ── FORM ────────────────────────────────── */
+  #contact {
+    background: linear-gradient(135deg, var(--sky3) 0%, var(--sky2) 60%, var(--sky) 100%);
+  }
+  #contact .section-tag { color: rgba(255,255,255,.75); }
+  #contact .section-title { color: #fff; }
+  #contact .section-sub { color: rgba(255,255,255,.8); }
+  .form-wrap {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+    align-items: start;
+  }
+  .form-info ul { list-style: none; display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+  .form-info li { display: flex; align-items: center; gap: 12px;
+    color: rgba(255,255,255,.9); font-size: .97rem; }
+  .form-info li::before { content: '✓'; font-weight: 800;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; flex-shrink: 0; }
+
+  .form-box {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(26,127,181,.3);
+  }
+  .form-box h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; color: var(--dark); }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .field label { font-size: .85rem; font-weight: 600; color: var(--dark); }
+  .field input, .field select {
+    padding: 13px 16px;
+    border: 2px solid var(--pale2);
+    border-radius: 10px;
+    font-size: .97rem; color: var(--dark);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    background: var(--light);
+    font-family: inherit;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--sky2);
+    box-shadow: 0 0 0 4px rgba(91,184,245,.18);
+    background: #fff;
+  }
+  .field input.error { border-color: var(--err); box-shadow: 0 0 0 4px rgba(224,82,82,.12); }
+  .field-err { display: none; font-size: .8rem; color: var(--err); font-weight: 500; }
+  .field-err.show { display: block; }
+  .form-submit { width: 100%; margin-top: 6px; font-size: 1.05rem; }
+  .form-success {
+    display: none; text-align: center; padding: 20px 0;
+    color: var(--ok); font-weight: 600; font-size: 1.05rem;
+  }
+  .form-success::before { content: '✓  '; font-size: 1.3rem; }
+
+  /* ── FOOTER ──────────────────────────────── */
+  footer {
+    background: var(--dark);
+    color: rgba(255,255,255,.7);
+    padding: 50px 20px 30px;
+  }
+  .footer-inner {
+    max-width: 1140px; margin: 0 auto;
+    display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+    margin-bottom: 40px;
+  }
+  .footer-brand .nav-logo { color: var(--sky); display: block; margin-bottom: 12px; }
+  .footer-brand p { font-size: .88rem; line-height: 1.65; max-width: 280px; }
+  .footer-col h4 { color: #fff; font-size: .95rem; font-weight: 700; margin-bottom: 16px; }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .footer-col a { color: rgba(255,255,255,.65); text-decoration: none;
+    font-size: .88rem; transition: color .2s; }
+  .footer-col a:hover { color: var(--sky); }
+  .footer-bottom {
+    max-width: 1140px; margin: 0 auto;
+    border-top: 1px solid rgba(255,255,255,.1);
+    padding-top: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px;
+    font-size: .82rem;
+  }
+  .social-links { display: flex; gap: 12px; }
+  .social-links a {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.7); font-size: .85rem; text-decoration: none;
+    transition: background .2s, color .2s;
+  }
+  .social-links a:hover { background: var(--sky2); color: #fff; }
+
+  /* ── SCROLL REVEAL ───────────────────────── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── RESPONSIVE ──────────────────────────── */
+  @media (max-width: 900px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; flex-direction: column; position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: rgba(255,255,255,.97);
+      border-top: 1px solid var(--pale2);
+      padding: 20px; gap: 18px;
+      backdrop-filter: blur(16px); }
+    .nav-links.open { display: flex; }
+    .nav-burger { display: flex; }
+    .adv-grid { grid-template-columns: 1fr; }
+    .gallery-grid { grid-template-columns: repeat(2,1fr); }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .form-wrap { grid-template-columns: 1fr; gap: 36px; }
+    .form-info { order: 2; }
+    .form-box { order: 1; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .footer-brand { grid-column: 1/-1; }
+  }
+
+  @media (max-width: 560px) {
+    section { padding: 70px 16px; }
+    .gallery-grid { grid-template-columns: 1fr; }
+    .form-box { padding: 26px 20px; }
+    .footer-inner { grid-template-columns: 1fr; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; }
+    .hero-btns { flex-direction: column; align-items: center; }
+    .btn-primary, .btn-outline { width: 100%; max-width: 300px; text-align: center; }
+    .airplane { width: 240px; height: 120px; }
+  }
+
+  @media (max-width: 360px) {
+    .hero h1 { font-size: 1.85rem; }
+    .section-title { font-size: 1.5rem; }
+    .airplane { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">Sky<span>Free</span></a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#advantages">О нас</a></li>
+    <li><a href="#gallery">Галерея</a></li>
+    <li><a href="#reviews">Отзывы</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Записаться</a></li>
+  </ul>
+  <button class="nav-burger" id="burger" aria-label="Меню">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+
+  <!-- Flying airplane -->
+  <div class="airplane">
+    <img src="images/airplane.png" alt="Flying airplane">
+  </div>
+
+  <div class="hero-badge">Открытый набор 2026</div>
+  <h1>Прыгни навстречу<br><em>небу</em></h1>
+  <p>SkyFree — парашютный клуб для тех, кто хочет ощутить настоящую свободу. Первый прыжок с инструктором уже через 24 часа.</p>
+  <div class="hero-btns">
+    <a href="#contact" class="btn-primary" id="ctaBtn">Записаться сейчас</a>
+    <a href="#gallery" class="btn-outline">Смотреть галерею</a>
+  </div>
+  <div class="hero-scroll">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    Листай вниз
+  </div>
+</section>
+
+<!-- ADVANTAGES -->
+<section id="advantages">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">Почему мы</span>
+      <h2 class="section-title">Три причины выбрать SkyFree</h2>
+      <p class="section-sub">Мы делаем первый прыжок безопасным, незабываемым и простым в организации.</p>
+    </div>
+    <div class="adv-grid">
+      <div class="adv-card reveal">
+        <div class="adv-icon">🪂</div>
+        <h3>Безопасность на высшем уровне</h3>
+        <p>Все инструкторы имеют сертификат FAI и более 1000 прыжков. Оборудование проходит технический осмотр перед каждым полётом.</p>
+      </div>
+      <div class="adv-card reveal" style="transition-delay:.1s">
+        <div class="adv-icon">⚡</div>
+        <h3>Быстрый старт</h3>
+        <p>Минимальный брифинг 2 часа — и вы готовы к прыжку тандем. Никаких недельных курсов, если вы просто хотите ощутить полёт.</p>
+      </div>
+      <div class="adv-card reveal" style="transition-delay:.2s">
+        <div class="adv-icon">📸</div>
+        <h3>Фото и видео в подарок</h3>
+        <p>Каждый тандем-прыжок снимается на экшн-камеру. Вы получите смонтированный ролик и фотографии в тот же день.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">Галерея</span>
+      <h2 class="section-title">Моменты свободы</h2>
+      <p class="section-sub">Каждый прыжок — уникальная история. Посмотри, что ждёт тебя в небе.</p>
+    </div>
+    <div class="gallery-grid">
+      <div class="gallery-card reveal">
+        <img class="g-img" src="images/gallery1.jpg" alt="Несколько людей прыгают с парашютами">
+        <div class="g-overlay"><span>Тандем-прыжок</span></div>
+      </div>
+      <div class="gallery-card reveal" style="transition-delay:.08s">
+        <img class="g-img" src="images/gallery2.jpg" alt="Мужчина прыгает в небо в яркий день">
+        <div class="g-overlay"><span>Свободное падение</span></div>
+      </div>
+      <div class="gallery-card reveal" style="transition-delay:.16s">
+        <img class="g-img" src="images/gallery3.jpg" alt="Мужчина в красном и чёрном костюме выполняет прыжок">
+        <div class="g-overlay"><span>Экстремальный трюк</span></div>
+      </div>
+      <div class="gallery-card reveal" style="transition-delay:.24s">
+        <img class="g-img" src="images/gallery4.jpg" alt="Человек в красно-чёрной куртке на высоте">
+        <div class="g-overlay"><span>Прыжок с парашютом</span></div>
+      </div>
+      <div class="gallery-card reveal" style="transition-delay:.32s">
+        <img class="g-img" src="images/gallery5.jpg" alt="Мужчина прыгает с парашютом над облаками">
+        <div class="g-overlay"><span>Небо и свобода</span></div>
+      </div>
+      <div class="gallery-card reveal" style="transition-delay:.4s">
+        <img class="g-img" src="images/gallery6.jpg" alt="Два человека прыгают в воздух на фоне ясного неба">
+        <div class="g-overlay"><span>Групповой прыжок</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section id="reviews">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">Отзывы</span>
+      <h2 class="section-title">Что говорят наши парашютисты</h2>
+      <p class="section-sub">Больше 800 счастливых прыжков — лучший показатель нашей работы.</p>
+    </div>
+    <div class="reviews-grid">
+      <div class="review-card reveal">
+        <div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+        <p class="review-text">Боялась до последнего, но инструктор всё время поддерживал. В итоге этот прыжок стал лучшим днём в моей жизни. Уже записалась на второй!</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar"><img src="images/review1.jpg" alt="Анна Козлова"></div>
+          <div class="reviewer-info">
+            <strong>Анна Козлова</strong>
+            <span>Первый тандем-прыжок</span>
+          </div>
+        </div>
+      </div>
+      <div class="review-card reveal" style="transition-delay:.1s">
+        <div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+        <p class="review-text">Организация на пять. С момента звонка до приземления — всё чётко и по делу. Видео получилось профессиональным, до сих пор пересматриваю.</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar"><img src="images/review2.jpg" alt="Максим Соколов"></div>
+          <div class="reviewer-info">
+            <strong>Максим Соколов</strong>
+            <span>Прыжок на день рождения</span>
+          </div>
+        </div>
+      </div>
+      <div class="review-card reveal" style="transition-delay:.2s">
+        <div class="stars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+        <p class="review-text">Взяли корпоративный пакет на 10 человек. Все остались в восторге. Инструктора — профи с отличным чувством юмора. Рекомендую без раздумий!</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar"><img src="images/review3.jpg" alt="Елена Чернова"></div>
+          <div class="reviewer-info">
+            <strong>Елена Чернова</strong>
+            <span>Корпоративный тимбилдинг</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">FAQ</span>
+      <h2 class="section-title">Часто задаваемые вопросы</h2>
+      <p class="section-sub">Ответы на самые популярные вопросы от новичков.</p>
+    </div>
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <button class="faq-question">
+          Нужен ли опыт для первого прыжка?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">Нет, опыт не нужен. Тандем-прыжок — это прыжок вместе с сертифицированным инструктором. Вам достаточно пройти двухчасовой инструктаж и быть готовым физически и морально.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          Какие ограничения по здоровью?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">Прыжки противопоказаны при болезнях сердца, эпилепсии, травмах позвоночника, беременности и некоторых других состояниях. Перед записью уточните у менеджера — мы ответим честно и поможем разобраться.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          С какой высоты прыгают?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">Стандартный тандем-прыжок выполняется с высоты 4000 метров. Свободное падение длится около 50 секунд, затем раскрывается купол и вы плавно снижаетесь 5–7 минут. Есть пакеты с высоты 1500 м для более мягкого старта.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          Что делать при плохой погоде?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">Безопасность — наш приоритет. При нелётной погоде мы перенесём прыжок на ближайший подходящий день без штрафов и доплат. Вы получите уведомление накануне или утром в день прыжка.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">
+          Можно ли подарить прыжок?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">Конечно! Мы оформляем именные подарочные сертификаты на любой тип прыжка. Сертификат действителен 12 месяцев. Оформить можно прямо через форму на сайте или по телефону.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT FORM -->
+<section id="contact">
+  <div class="container">
+    <div class="form-wrap">
+      <div class="form-info">
+        <div class="section-head">
+          <span class="section-tag">Записаться</span>
+          <h2 class="section-title">Твой первый шаг<br>к небу</h2>
+          <p class="section-sub">Оставь заявку — менеджер свяжется с тобой в течение 30 минут и ответит на все вопросы.</p>
+        </div>
+        <ul>
+          <li>Подбор удобного времени</li>
+          <li>Консультация по выбору прыжка</li>
+          <li>Ответы на медицинские вопросы</li>
+          <li>Оформление подарочного сертификата</li>
+        </ul>
+      </div>
+      <div class="form-box reveal">
+        <h3>Оставить заявку</h3>
+        <form id="contactForm" novalidate>
+          <div class="field">
+            <label for="fname">Ваше имя *</label>
+            <input type="text" id="fname" name="name" placeholder="Иван Иванов">
+            <span class="field-err" id="fnameErr">Пожалуйста, введите имя</span>
+          </div>
+          <div class="field">
+            <label for="fphone">Телефон *</label>
+            <input type="tel" id="fphone" name="phone" placeholder="+7 (900) 000-00-00">
+            <span class="field-err" id="fphoneErr">Введите корректный номер телефона</span>
+          </div>
+          <div class="field">
+            <label for="femail">Email *</label>
+            <input type="email" id="femail" name="email" placeholder="ivan@example.com">
+            <span class="field-err" id="femailErr">Введите корректный email</span>
+          </div>
+          <div class="field">
+            <label for="ftype">Тип прыжка</label>
+            <select id="ftype" name="type">
+              <option value="">— Выберите —</option>
+              <option>Тандем с 4000 м</option>
+              <option>Тандем с 1500 м</option>
+              <option>AFF-курс (самостоятельный)</option>
+              <option>Подарочный сертификат</option>
+              <option>Корпоративный пакет</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary form-submit">Отправить заявку</button>
+          <div class="form-success" id="formSuccess">Заявка отправлена! Мы позвоним вам в ближайшее время.</div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo">Sky<span style="color:#5bb8f5">Free</span></a>
+      <p>Парашютный клуб SkyFree — место, где страх превращается в восторг, а земля кажется бесконечно далёкой. Прыгай с нами.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Навигация</h4>
+      <ul>
+        <li><a href="#advantages">О нас</a></li>
+        <li><a href="#gallery">Галерея</a></li>
+        <li><a href="#reviews">Отзывы</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#contact">Записаться</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Контакты</h4>
+      <ul>
+        <li><a href="tel:+78001234567">+7 (800) 123-45-67</a></li>
+        <li><a href="mailto:info@skyfree.ru">info@skyfree.ru</a></li>
+        <li><a href="#">Аэродром «Северный»</a></li>
+        <li><a href="#">Пн–Вс: 07:00–19:00</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 SkyFree. Все права защищены.</span>
+    <div class="social-links">
+      <a href="#" title="ВКонтакте">VK</a>
+      <a href="#" title="Telegram">TG</a>
+      <a href="#" title="YouTube">YT</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── NAV scroll shadow
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // ── Mobile burger
+  const burger = document.getElementById('burger');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => {
+    burger.classList.toggle('open');
+    navLinks.classList.toggle('open');
+  });
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    burger.classList.remove('open');
+    navLinks.classList.remove('open');
+  }));
+
+  // ── FAQ accordion
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+
+  // ── Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+
+  // ── Form validation
+  const form = document.getElementById('contactForm');
+
+  function showErr(input, errEl, show) {
+    input.classList.toggle('error', show);
+    errEl.classList.toggle('show', show);
+  }
+
+  function validatePhone(v) {
+    return /^[\+]?[\d\s\(\)\-]{7,18}$/.test(v.trim());
+  }
+  function validateEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  const fname   = document.getElementById('fname');
+  const fphone  = document.getElementById('fphone');
+  const femail  = document.getElementById('femail');
+  const fnameErr  = document.getElementById('fnameErr');
+  const fphoneErr = document.getElementById('fphoneErr');
+  const femailErr = document.getElementById('femailErr');
+
+  // Live clear on input
+  [fname, fphone, femail].forEach((el, i) => {
+    el.addEventListener('input', () => {
+      const errs = [fnameErr, fphoneErr, femailErr];
+      el.classList.remove('error');
+      errs[i].classList.remove('show');
+    });
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let valid = true;
+
+    if (!fname.value.trim() || fname.value.trim().length < 2) {
+      showErr(fname, fnameErr, true); valid = false;
+    }
+    if (!validatePhone(fphone.value)) {
+      showErr(fphone, fphoneErr, true); valid = false;
+    }
+    if (!validateEmail(femail.value)) {
+      showErr(femail, femailErr, true); valid = false;
+    }
+
+    if (!valid) return;
+
+    // Simulate send
+    const btn = form.querySelector('.form-submit');
+    btn.textContent = 'Отправляем…';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      form.querySelectorAll('input, select').forEach(el => el.value = '');
+      btn.style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'block';
+    }, 1200);
+  });
+</script>
+</body>
+</html>
