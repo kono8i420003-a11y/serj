@@ -380,6 +380,11 @@
     color: var(--ok); font-weight: 600; font-size: 1.05rem;
   }
   .form-success::before { content: '✓  '; font-size: 1.3rem; }
+  .form-error {
+    display: none; text-align: center; padding: 14px 0 0;
+    color: var(--err); font-weight: 600; font-size: .95rem;
+  }
+  .form-error.show { display: block; }
 
   /* ── FOOTER ──────────────────────────────── */
   footer {
@@ -678,36 +683,20 @@
         </ul>
       </div>
       <div class="form-box reveal">
-        <h3>Оставить заявку</h3>
+        <h3>Подписаться</h3>
         <form id="contactForm" novalidate>
           <div class="field">
-            <label for="fname">Ваше имя *</label>
+            <label for="fname">Имя (опционально)</label>
             <input type="text" id="fname" name="name" placeholder="Иван Иванов">
-            <span class="field-err" id="fnameErr">Пожалуйста, введите имя</span>
-          </div>
-          <div class="field">
-            <label for="fphone">Телефон *</label>
-            <input type="tel" id="fphone" name="phone" placeholder="+7 (900) 000-00-00">
-            <span class="field-err" id="fphoneErr">Введите корректный номер телефона</span>
           </div>
           <div class="field">
             <label for="femail">Email *</label>
-            <input type="email" id="femail" name="email" placeholder="ivan@example.com">
+            <input type="email" id="femail" name="email" placeholder="ivan@example.com" required>
             <span class="field-err" id="femailErr">Введите корректный email</span>
           </div>
-          <div class="field">
-            <label for="ftype">Тип прыжка</label>
-            <select id="ftype" name="type">
-              <option value="">— Выберите —</option>
-              <option>Тандем с 4000 м</option>
-              <option>Тандем с 1500 м</option>
-              <option>AFF-курс (самостоятельный)</option>
-              <option>Подарочный сертификат</option>
-              <option>Корпоративный пакет</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-primary form-submit">Отправить заявку</button>
-          <div class="form-success" id="formSuccess">Заявка отправлена! Мы позвоним вам в ближайшее время.</div>
+          <button type="submit" class="btn-primary form-submit">Подписаться</button>
+          <div class="form-success" id="formSuccess">Спасибо!</div>
+          <div class="form-error" id="formError"></div>
         </form>
       </div>
     </div>
@@ -788,62 +777,85 @@
   reveals.forEach(el => io.observe(el));
 
   // ── Form validation
+  const SUPABASE_URL = 'https://ajmepvbwvinerupsxlvk.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_mYo2cckNCX3MsfSznr9-Fw_X_fKvxEa';
   const form = document.getElementById('contactForm');
 
-  function showErr(input, errEl, show) {
-    input.classList.toggle('error', show);
-    errEl.classList.toggle('show', show);
+  function validateEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
   }
 
-  function validatePhone(v) {
-    return /^[\+]?[\d\s\(\)\-]{7,18}$/.test(v.trim());
-  }
-  function validateEmail(v) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const nameInput = document.getElementById('fname');
+  const emailInput = document.getElementById('femail');
+  const emailErr = document.getElementById('femailErr');
+  const formSuccess = document.getElementById('formSuccess');
+  const formError = document.getElementById('formError');
+
+  function setButtonState(button, isLoading) {
+    button.disabled = isLoading;
+    button.textContent = isLoading ? 'Отправляем…' : 'Подписаться';
   }
 
-  const fname   = document.getElementById('fname');
-  const fphone  = document.getElementById('fphone');
-  const femail  = document.getElementById('femail');
-  const fnameErr  = document.getElementById('fnameErr');
-  const fphoneErr = document.getElementById('fphoneErr');
-  const femailErr = document.getElementById('femailErr');
+  function resetMessage() {
+    formSuccess.style.display = 'none';
+    formError.textContent = '';
+    formError.classList.remove('show');
+  }
 
-  // Live clear on input
-  [fname, fphone, femail].forEach((el, i) => {
-    el.addEventListener('input', () => {
-      const errs = [fnameErr, fphoneErr, femailErr];
-      el.classList.remove('error');
-      errs[i].classList.remove('show');
-    });
+  emailInput.addEventListener('input', () => {
+    emailInput.classList.remove('error');
+    emailErr.classList.remove('show');
+    resetMessage();
   });
 
-  form.addEventListener('submit', (e) => {
+  nameInput.addEventListener('input', resetMessage);
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    let valid = true;
+    resetMessage();
 
-    if (!fname.value.trim() || fname.value.trim().length < 2) {
-      showErr(fname, fnameErr, true); valid = false;
-    }
-    if (!validatePhone(fphone.value)) {
-      showErr(fphone, fphoneErr, true); valid = false;
-    }
-    if (!validateEmail(femail.value)) {
-      showErr(femail, femailErr, true); valid = false;
+    const emailValue = emailInput.value.trim();
+    if (!validateEmail(emailValue)) {
+      emailInput.classList.add('error');
+      emailErr.classList.add('show');
+      return;
     }
 
-    if (!valid) return;
+    const button = form.querySelector('.form-submit');
+    setButtonState(button, true);
 
-    // Simulate send
-    const btn = form.querySelector('.form-submit');
-    btn.textContent = 'Отправляем…';
-    btn.disabled = true;
+    const payload = {
+      name: nameInput.value.trim() || null,
+      email: emailValue
+    };
 
-    setTimeout(() => {
-      form.querySelectorAll('input, select').forEach(el => el.value = '');
-      btn.style.display = 'none';
-      document.getElementById('formSuccess').style.display = 'block';
-    }, 1200);
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/subscriptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Ошибка сервера');
+      }
+
+      form.reset();
+      formSuccess.style.display = 'block';
+      formSuccess.textContent = 'Спасибо!';
+    } catch (error) {
+      formError.textContent = 'Не удалось отправить. Попробуйте позже.';
+      formError.classList.add('show');
+      console.error('Supabase error:', error);
+    } finally {
+      setButtonState(button, false);
+    }
   });
 </script>
 </body>
