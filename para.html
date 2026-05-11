@@ -818,7 +818,10 @@
     });
   });
 
-  form.addEventListener('submit', (e) => {
+  const SUPABASE_URL = 'https://ajmepvbwvinerupsxlvk.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqbWVwdmJ3dmluZXJ1cHN4bHZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxOTM4NzYsImV4cCI6MjA5Mjc2OTg3Nn0.2F8ovTzlj-lhoT0iY-yycdKKcwaNYRLQUEBdVoEfrck';
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     let valid = true;
 
@@ -834,16 +837,40 @@
 
     if (!valid) return;
 
-    // Simulate send
     const btn = form.querySelector('.form-submit');
     btn.textContent = 'Отправляем…';
     btn.disabled = true;
 
-    setTimeout(() => {
-      form.querySelectorAll('input, select').forEach(el => el.value = '');
-      btn.style.display = 'none';
-      document.getElementById('formSuccess').style.display = 'block';
-    }, 1200);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          name: fname.value.trim(),
+          phone: fphone.value.trim(),
+          email: femail.value.trim(),
+          jump_type: document.getElementById('ftype').value || null
+        })
+      });
+
+      if (res.ok) {
+        form.querySelectorAll('input, select').forEach(el => el.value = '');
+        btn.style.display = 'none';
+        document.getElementById('formSuccess').style.display = 'block';
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.error('Ошибка отправки:', err);
+      btn.textContent = 'Отправить заявку';
+      btn.disabled = false;
+      alert('Ошибка отправки. Попробуйте ещё раз.');
+    }
   });
 </script>
 </body>

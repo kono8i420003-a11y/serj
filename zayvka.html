@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Заявка</title>
+  <style>
+    :root {
+      --bg-start: #0f172a;
+      --bg-end: #1e293b;
+      --card: rgba(15, 23, 42, 0.72);
+      --card-border: rgba(148, 163, 184, 0.3);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #22d3ee;
+      --primary-hover: #06b6d4;
+      --error: #fda4af;
+      --success: #86efac;
+      --input-bg: rgba(15, 23, 42, 0.45);
+      --input-border: rgba(148, 163, 184, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at top, var(--bg-end), var(--bg-start));
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 28px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 24px 45px rgba(2, 6, 23, 0.45);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0.3px;
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--input-bg);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input::placeholder {
+      color: #64748b;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 14px;
+      border: 0;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--primary), #38bdf8);
+      color: #082f49;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.2s;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+
+    #status {
+      margin-top: 16px;
+      min-height: 22px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .error {
+      color: var(--error);
+    }
+
+    .success {
+      color: var(--success);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Заявка</h1>
+    <p class="subtitle">Заполните форму, и мы перезвоним в ближайшее время.</p>
+    <p class="subtitle">Мы на связи 24 часа</p>
+
+    <form id="requestForm" novalidate>
+      <div class="field">
+        <label for="name">Имя</label>
+        <input id="name" name="name" type="text" placeholder="Введите имя" />
+      </div>
+
+      <div class="field">
+        <label for="phone">Телефон</label>
+        <input id="phone" name="phone" type="tel" placeholder="+7 (___) ___-__-__" />
+      </div>
+
+      <button type="submit">Отправить</button>
+    </form>
+
+    <div id="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://ajmepvbwvinerupsxlvk.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqbWVwdmJ3dmluZXJ1cHN4bHZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxOTM4NzYsImV4cCI6MjA5Mjc2OTg3Nn0.2F8ovTzlj-lhoT0iY-yycdKKcwaNYRLQUEBdVoEfrck';
+
+    const form = document.getElementById("requestForm");
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+    const status = document.getElementById("status");
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const name = nameInput.value.trim();
+      const phone = phoneInput.value.trim();
+
+      status.className = "";
+
+      if (!name || !phone) {
+        status.textContent = "Заполните поля";
+        status.classList.add("error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ name, phone })
+        });
+
+        if (res.ok) {
+          status.textContent = "Заявка принята! Мы перезвоним в ближайшее время.";
+          status.classList.add("success");
+          form.reset();
+          nameInput.focus();
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (err) {
+        console.error('Ошибка:', err);
+        status.textContent = "Ошибка отправки. Попробуйте ещё раз.";
+        status.classList.add("error");
+      }
+    });
+  </script>
+</body>
+</html>
